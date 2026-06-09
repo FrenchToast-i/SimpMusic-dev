@@ -18,7 +18,7 @@ import platform.Foundation.create
 import kotlin.io.encoding.Base64
 
 @OptIn(ExperimentalForeignApi::class)
-actual class Hmac actual constructor(algorithm: String, secretKey: String) {
+actual class Hmac actual constructor(algorithm: String, private val secretKey: String) {
     private var tokenTtl: Long = 300_000
     private val algorithmType =
         when (algorithm) {
@@ -32,7 +32,7 @@ actual class Hmac actual constructor(algorithm: String, secretKey: String) {
         }
 
     actual fun getMacTimestampPair(uri: String): Pair<String, String> {
-        val timestamp = (NSDate().timeIntervalSince1970 * 1000.0).toLong().toString()
+        val timestamp = ((NSDate().timeIntervalSince1970) * 1000.0).toLong().toString()
         val data = "$timestamp$uri"
         return generateHmac(data) to timestamp
     }
@@ -66,7 +66,7 @@ actual class Hmac actual constructor(algorithm: String, secretKey: String) {
 
     actual fun isValidTimestamp(timestamp: String): Boolean {
         val requestTime = timestamp.toLongOrNull() ?: return false
-        val currentTime = (NSDate().timeIntervalSince1970 * 1000.0).toLong()
+        val currentTime = ((NSDate().timeIntervalSince1970) * 1000.0).toLong()
         return (currentTime - requestTime) < tokenTtl
     }
 }
