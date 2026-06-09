@@ -14,7 +14,8 @@ import platform.CoreCrypto.kCCHmacAlgSHA1
 import platform.CoreCrypto.kCCHmacAlgSHA256
 import platform.Foundation.NSData
 import platform.Foundation.NSDate
-import platform.Foundation.create
+import platform.Foundation.NSTimeInterval
+import platform.darwin.CFAbsoluteTimeGetCurrent
 import kotlin.io.encoding.Base64
 
 @OptIn(ExperimentalForeignApi::class)
@@ -32,7 +33,7 @@ actual class Hmac actual constructor(algorithm: String, private val secretKey: S
         }
 
     actual fun getMacTimestampPair(uri: String): Pair<String, String> {
-        val timestamp = ((NSDate().timeIntervalSince1970) * 1000.0).toLong().toString()
+        val timestamp = ((CFAbsoluteTimeGetCurrent()) * 1000.0).toLong().toString()
         val data = "$timestamp$uri"
         return generateHmac(data) to timestamp
     }
@@ -54,7 +55,7 @@ actual class Hmac actual constructor(algorithm: String, private val secretKey: S
                     )
                 }
             }
-            val bytes = ByteArray(digestLength) { index -> output[index].toByte() }
+            val bytes = ByteArray(digestLength) { index -> output[index].toInt().toByte() }
             Base64.encode(bytes)
         }
     }
@@ -66,7 +67,7 @@ actual class Hmac actual constructor(algorithm: String, private val secretKey: S
 
     actual fun isValidTimestamp(timestamp: String): Boolean {
         val requestTime = timestamp.toLongOrNull() ?: return false
-        val currentTime = ((NSDate().timeIntervalSince1970) * 1000.0).toLong()
+        val currentTime = ((CFAbsoluteTimeGetCurrent()) * 1000.0).toLong()
         return (currentTime - requestTime) < tokenTtl
     }
 }

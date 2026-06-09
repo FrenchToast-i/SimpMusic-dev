@@ -17,6 +17,11 @@ private object UnsupportedBrotliEncoder : ContentEncoder {
         source: ByteReadChannel,
         coroutineContext: CoroutineContext,
     ): ByteReadChannel = throw UnsupportedOperationException("Brotli encoding is not supported on iOS")
+
+    override fun encode(
+        source: ByteWriteChannel,
+        coroutineContext: CoroutineContext,
+    ): ByteWriteChannel = throw UnsupportedOperationException("Brotli encoding is not supported on iOS")
 }
 
 actual fun createBrotliEncoder(): ContentEncoder = UnsupportedBrotliEncoder
