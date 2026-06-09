@@ -53,13 +53,9 @@ jobs:
         with:
           xcode-version: '15.0'
 
-      - name: Build Kotlin Framework for iOS
-        run: |
-          chmod +x gradlew
-          ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
-
       - name: Build unsigned .app
         run: |
+          chmod +x gradlew
           cd iosApp
           xcodebuild -project iosApp.xcodeproj \
             -scheme iosApp \
