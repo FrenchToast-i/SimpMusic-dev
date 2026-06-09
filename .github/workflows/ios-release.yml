@@ -64,6 +64,8 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_ALLOWED=NO \
             build
+        env:
+          KOTLIN_GRADLE_OPTS: "-Dorg.gradle.configuration-cache=false"
 
       - name: Package .app for download
         run: |
