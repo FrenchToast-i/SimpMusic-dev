@@ -31,8 +31,7 @@ actual class Hmac actual constructor(algorithm: String, private val secretKey: S
         }
 
     actual fun getMacTimestampPair(uri: String): Pair<String, String> {
-        val date = NSDate()
-        val timestamp = ((date.timeIntervalSince1970) * 1000.0).toLong().toString()
+        val timestamp = (kotlin.system.getTimeMillis()).toString()
         val data = "$timestamp$uri"
         return generateHmac(data) to timestamp
     }
@@ -66,8 +65,7 @@ actual class Hmac actual constructor(algorithm: String, private val secretKey: S
 
     actual fun isValidTimestamp(timestamp: String): Boolean {
         val requestTime = timestamp.toLongOrNull() ?: return false
-        val date = NSDate()
-        val currentTime = ((date.timeIntervalSince1970) * 1000.0).toLong()
+        val currentTime = kotlin.system.getTimeMillis()
         return (currentTime - requestTime) < tokenTtl
     }
 }

@@ -66,6 +66,7 @@ jobs:
             build
         env:
           KOTLIN_GRADLE_OPTS: "-Dorg.gradle.configuration-cache=false"
+          GRADLE_OPTS: "--info"
 
       - name: Package .app for download
         run: |
