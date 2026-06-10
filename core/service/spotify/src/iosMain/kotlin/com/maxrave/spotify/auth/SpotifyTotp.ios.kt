@@ -35,7 +35,7 @@ actual fun generateTotp(secret: String, timestamp: Long): String {
                     )
                 }
             }
-            ByteArray(20) { index -> output[index].toByte() }
+            ByteArray(20) { index -> output[index].toInt().toByte() }
         }
     val offset = hash.last().toInt() and 0x0F
     val binary =
