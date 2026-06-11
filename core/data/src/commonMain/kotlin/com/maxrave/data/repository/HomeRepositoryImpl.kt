@@ -18,7 +18,6 @@ import com.maxrave.domain.utils.Resource
 import com.maxrave.kotlinytmusicscraper.YouTube
 import com.maxrave.logger.Logger
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -175,7 +174,7 @@ internal class HomeRepositoryImpl(
                         emit(Resource.Error<Pair<String?, List<HomeItem>>>(error.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getHomeDataContinue(
         continueParam: String,
@@ -206,7 +205,7 @@ internal class HomeRepositoryImpl(
             }.onFailure {
                 emit(Resource.Error<Pair<String?, List<HomeItem>>>(it.message.toString()))
             }
-    }.flowOn(Dispatchers.IO)
+    }.flowOn(Dispatchers.Default)
 
     override fun getNewRelease(
         newReleaseString: String,
@@ -220,7 +219,7 @@ internal class HomeRepositoryImpl(
                 }.onFailure { error ->
                     emit(Resource.Error<List<HomeItem>>(error.message.toString()))
                 }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getChartData(countryCode: String): Flow<Resource<Chart>> =
         flow {
@@ -247,7 +246,7 @@ internal class HomeRepositoryImpl(
                         emit(Resource.Error<Chart>(error.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getMoodAndMomentsData(): Flow<Resource<Mood>> =
         flow {
@@ -282,7 +281,7 @@ internal class HomeRepositoryImpl(
                         emit(Resource.Error<Mood>(e.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getMoodData(params: String): Flow<Resource<MoodsMomentObject>> =
         flow {
@@ -302,7 +301,7 @@ internal class HomeRepositoryImpl(
                         emit(Resource.Error<MoodsMomentObject>(e.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getGenreData(params: String): Flow<Resource<GenreObject>> =
         flow {
@@ -322,5 +321,5 @@ internal class HomeRepositoryImpl(
                         emit(Resource.Error<GenreObject>(e.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 }

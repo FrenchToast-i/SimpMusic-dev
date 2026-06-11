@@ -20,7 +20,6 @@ import com.maxrave.kotlinytmusicscraper.models.MediaType
 import com.maxrave.kotlinytmusicscraper.models.response.PlayerResponse
 import com.maxrave.logger.Logger
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -32,7 +31,7 @@ internal class StreamRepositoryImpl(
     private val youTube: YouTube,
 ) : StreamRepository {
     override suspend fun insertNewFormat(newFormat: NewFormatEntity) =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             localDataSource.insertNewFormat(newFormat)
         }
 
@@ -189,7 +188,7 @@ internal class StreamRepositoryImpl(
                                     Regex("( và | & | и | e | und |, |和| dan)"),
                                     " ",
                                 ).replace("  ", " ")
-                                .replace(Regex("([()])"), "")
+                                .replace(Regex("([()]))"), "")
                                 .replace(".", " ")
                                 .replace("  ", " ")
                         Logger.d("Stream", "Search Tidal metadata for: $q")
@@ -287,7 +286,7 @@ internal class StreamRepositoryImpl(
                     Logger.e("Stream", "Error: ${it.message}")
                     emit(null)
                 }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun initPlayback(
         playback: String,
@@ -305,7 +304,7 @@ internal class StreamRepositoryImpl(
                     Logger.e("InitPlayback", "Error: ${it.message}")
                     emit(Pair(0, 0f))
                 }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun updateWatchTimeFull(
         watchTime: String,
@@ -323,7 +322,7 @@ internal class StreamRepositoryImpl(
                         emit(0)
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun updateWatchTime(
         playbackTrackingVideostatsWatchtimeUrl: String,
@@ -346,7 +345,7 @@ internal class StreamRepositoryImpl(
                         emit(0)
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getSkipSegments(videoId: String): Flow<Resource<List<SponsorSkipSegments>>> =
         flow {
@@ -357,7 +356,7 @@ internal class StreamRepositoryImpl(
                 }.onFailure {
                     emit(Resource.Error(it.message ?: "Unknown error"))
                 }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getFullMetadata(videoId: String): Flow<Resource<Track>> =
         flow {
@@ -370,12 +369,12 @@ internal class StreamRepositoryImpl(
                     Logger.e("getFullMetadata", "Error: ${it.message}")
                     emit(Resource.Error(it.message ?: "Unknown error"))
                 }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
-    override fun is403Url(url: String) = flow { emit(youTube.is403Url(url)) }.flowOn(Dispatchers.IO)
+    override fun is403Url(url: String) = flow { emit(youTube.is403Url(url)) }.flowOn(Dispatchers.Default)
 
     override suspend fun invalidateFormat(videoId: String) {
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             localDataSource.getNewFormat(videoId)?.let { format ->
                 Logger.d("Stream", "Invalidating cached format for $videoId")
                 localDataSource.updateNewFormat(
