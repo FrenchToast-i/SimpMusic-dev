@@ -1,88 +1,60 @@
 package com.maxrave.ktorext.crypto
 
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.allocArray
-import kotlinx.cinterop.get
-import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.usePinned
 import platform.CoreCrypto.CC_SHA1_DIGEST_LENGTH
 import platform.CoreCrypto.CC_SHA256_DIGEST_LENGTH
 import platform.CoreCrypto.CCHmac
 import platform.CoreCrypto.kCCHmacAlgSHA1
 import platform.CoreCrypto.kCCHmacAlgSHA256
+import platform.posix.time
 import kotlin.io.encoding.Base64
-import platform.Foundation.NSDate
 
 /**
- * iOS implementation of HMAC using CoreCrypto framework.
- * Provides HMAC-SHA1 and HMAC-SHA256 functionality for secure API authentication.
+ * Clean, idiomatic iOS implementation of HMAC using CoreCrypto.
+ * Eliminates native allocation overhead and uses standard pinned Kotlin ByteArrays.
  */
 @OptIn(ExperimentalForeignApi::class)
 actual class Hmac actual constructor(
     private val algorithm: String,
     private val secretKey: String,
 ) {
-    private val tokenTtl: Long = 300_000 // 5 minutes in milliseconds
-
-    // algorithmType must match the native C constant types (UInt)
-    private val algorithmType: UInt
-        get() = when (algorithm) {
-            "HmacSHA1" -> kCCHmacAlgSHA1
-            "HmacSHA256" -> kCCHmacAlgSHA256
-            else -> kCCHmacAlgSHA256
-        }
-
-    // digestLength remains an Int (CC_*_DIGEST_LENGTH constants are Int)
-    private val digestLength: Int
-        get() = when (algorithmType) {
-            kCCHmacAlgSHA1 -> CC_SHA1_DIGEST_LENGTH
-            else -> CC_SHA256_DIGEST_LENGTH
-        }
+    private val tokenTtl = 300_000L // 5 minutes in ms
+    private val alg = if (algorithm == "HmacSHA1") kCCHmacAlgSHA1 else kCCHmacAlgSHA256
+    private val digestLength = if (alg == kCCHmacAlgSHA1) CC_SHA1_DIGEST_LENGTH else CC_SHA256_DIGEST_LENGTH
 
     actual fun getMacTimestampPair(uri: String): Pair<String, String> {
-        val timestamp = (NSDate().timeIntervalSince1970 * 1000).toLong().toString()
-        val data = "$timestamp$uri"
-        val hmacToken = generateHmac(data)
-        return hmacToken to timestamp
+        val timestamp = (time(null) * 1000L).toString()
+        return generateHmac("$timestamp$uri") to timestamp
     }
 
     actual fun generateHmac(data: String): String {
-        val keyBytes = secretKey.encodeToByteArray()
-        val dataBytes = data.encodeToByteArray()
+        val key = secretKey.encodeToByteArray()
+        val input = data.encodeToByteArray()
+        val out = ByteArray(digestLength)
 
-        return memScoped {
-            val output = allocArray<UByteVar>(digestLength)
-
-            keyBytes.usePinned { keyPinned ->
-                dataBytes.usePinned { dataPinned ->
-                    // Call CCHmac with positional args and use correct length types (ULong)
+        key.usePinned { keyPinned ->
+            input.usePinned { inputPinned ->
+                out.usePinned { outPinned ->
                     CCHmac(
-                        algorithmType,
+                        alg,
                         keyPinned.addressOf(0),
-                        keyBytes.size.toULong(),
-                        dataPinned.addressOf(0),
-                        dataBytes.size.toULong(),
-                        output
-                     )
+                        key.size.toULong(),
+                        inputPinned.addressOf(0),
+                        input.size.toULong(),
+                        outPinned.addressOf(0)
+                    )
                 }
             }
-
-            // Convert native UByteVar array to Kotlin ByteArray by reading values
-            val bytes = ByteArray(digestLength) { i -> output[i].toByte() }
-            Base64.encode(bytes)
         }
+        return Base64.encode(out)
     }
 
-    actual fun validateHmac(data: String, hmac: String): Boolean {
-        val calculatedHmac = generateHmac(data)
-        return calculatedHmac == hmac
-    }
+    actual fun validateHmac(data: String, hmac: String): Boolean = generateHmac(data) == hmac
 
     actual fun isValidTimestamp(timestamp: String): Boolean {
         val requestTime = timestamp.toLongOrNull() ?: return false
-        val currentTime = (NSDate().timeIntervalSince1970 * 1000).toLong()
-        return (currentTime - requestTime) < tokenTtl
+        return (time(null) * 1000L - requestTime) < tokenTtl
     }
 }
