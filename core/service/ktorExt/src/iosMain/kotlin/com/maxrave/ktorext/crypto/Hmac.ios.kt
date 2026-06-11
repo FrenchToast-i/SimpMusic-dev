@@ -42,7 +42,7 @@ actual class Hmac actual constructor(
         }
 
     actual fun getMacTimestampPair(uri: String): Pair<String, String> {
-        val timestamp = Clock.System.now().toEpochMilliseconds().toString()
+        val timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds().toString()
         val data = "$timestamp$uri"
         val hmacToken = generateHmac(data)
         return hmacToken to timestamp
@@ -65,12 +65,12 @@ actual class Hmac actual constructor(
                         dataPinned.addressOf(0),
                         dataBytes.size.toULong(),
                         output
-                    )
+                     )
                 }
             }
 
-            // Convert native UByteVar array to Kotlin ByteArray by reading .value
-            val bytes = ByteArray(digestLength) { i -> output[i].value.toByte() }
+            // Convert native UByteVar array to Kotlin ByteArray by reading values
+            val bytes = ByteArray(digestLength) { i -> output[i].toByte() }
             Base64.encode(bytes)
         }
     }
@@ -82,7 +82,7 @@ actual class Hmac actual constructor(
 
     actual fun isValidTimestamp(timestamp: String): Boolean {
         val requestTime = timestamp.toLongOrNull() ?: return false
-        val currentTime = Clock.System.now().toEpochMilliseconds()
+        val currentTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         return (currentTime - requestTime) < tokenTtl
     }
 }
