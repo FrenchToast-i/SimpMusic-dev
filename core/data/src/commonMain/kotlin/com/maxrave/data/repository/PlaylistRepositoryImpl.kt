@@ -35,7 +35,6 @@ import com.maxrave.kotlinytmusicscraper.parser.getPlaylistRadioEndpoint
 import com.maxrave.kotlinytmusicscraper.parser.getPlaylistShuffleEndpoint
 import com.maxrave.logger.Logger
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -53,12 +52,12 @@ internal class PlaylistRepositoryImpl(
     override fun getAllPlaylists(limit: Int): Flow<List<PlaylistEntity>> =
         flow {
             emit(localDataSource.getAllPlaylists(limit))
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getPlaylist(id: String): Flow<PlaylistEntity?> =
         flow {
             emit(localDataSource.getPlaylist(id))
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getLikedPlaylists(): Flow<List<PlaylistEntity>> =
         flow {
@@ -67,13 +66,13 @@ internal class PlaylistRepositoryImpl(
                     localDataSource.getLikedPlaylists(limit, offset)
                 },
             )
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override suspend fun insertPlaylist(playlistEntity: PlaylistEntity) =
-        withContext(Dispatchers.IO) { localDataSource.insertPlaylist(playlistEntity) }
+        withContext(Dispatchers.Default) { localDataSource.insertPlaylist(playlistEntity) }
 
     override suspend fun insertAndReplacePlaylist(playlistEntity: PlaylistEntity) =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val oldPlaylist = getPlaylist(playlistEntity.id).firstOrNull()
             if (oldPlaylist != null) {
                 localDataSource.insertAndReplacePlaylist(
@@ -88,12 +87,12 @@ internal class PlaylistRepositoryImpl(
         }
 
     override suspend fun insertRadioPlaylist(playlistEntity: PlaylistEntity) =
-        withContext(Dispatchers.IO) { localDataSource.insertRadioPlaylist(playlistEntity) }
+        withContext(Dispatchers.Default) { localDataSource.insertRadioPlaylist(playlistEntity) }
 
     override suspend fun updatePlaylistLiked(
         playlistId: String,
         likeStatus: Int,
-    ) = withContext(Dispatchers.Main) {
+    ) = withContext(Dispatchers.Default) {
         localDataSource.updatePlaylistLiked(
             likeStatus,
             playlistId,
@@ -103,7 +102,7 @@ internal class PlaylistRepositoryImpl(
     override suspend fun updatePlaylistInLibrary(
         inLibrary: LocalDateTime,
         playlistId: String,
-    ) = withContext(Dispatchers.Main) {
+    ) = withContext(Dispatchers.Default) {
         localDataSource.updatePlaylistInLibrary(
             inLibrary,
             playlistId,
@@ -113,7 +112,7 @@ internal class PlaylistRepositoryImpl(
     override suspend fun updatePlaylistDownloadState(
         playlistId: String,
         downloadState: Int,
-    ) = withContext(Dispatchers.Main) {
+    ) = withContext(Dispatchers.Default) {
         localDataSource.updatePlaylistDownloadState(
             downloadState,
             playlistId,
@@ -121,12 +120,12 @@ internal class PlaylistRepositoryImpl(
     }
 
     override fun getAllDownloadedPlaylist(): Flow<List<PlaylistType>> =
-        flow { emit(localDataSource.getAllDownloadedPlaylist()) }.flowOn(Dispatchers.IO)
+        flow { emit(localDataSource.getAllDownloadedPlaylist()) }.flowOn(Dispatchers.Default)
 
     override fun getAllDownloadingPlaylist(): Flow<List<PlaylistType>> =
-        flow { emit(localDataSource.getAllDownloadingPlaylist()) }.flowOn(Dispatchers.IO)
+        flow { emit(localDataSource.getAllDownloadingPlaylist()) }.flowOn(Dispatchers.Default)
 
-    private suspend fun insertSetVideoId(setVideoId: SetVideoIdEntity) = withContext(Dispatchers.IO) { localDataSource.insertSetVideoId(setVideoId) }
+    private suspend fun insertSetVideoId(setVideoId: SetVideoIdEntity) = withContext(Dispatchers.Default) { localDataSource.insertSetVideoId(setVideoId) }
 
     override fun getRadio(
         radioId: String,
@@ -201,7 +200,7 @@ internal class PlaylistRepositoryImpl(
                             emit(Resource.Error<Pair<PlaylistBrowse, String?>>(exception.message.toString()))
                         }
                 }
-            }.flowOn(Dispatchers.IO)
+            }.flowOn(Dispatchers.Default)
         }
 
     override fun getRDATRadioData(
@@ -301,7 +300,7 @@ internal class PlaylistRepositoryImpl(
                         emit(Resource.Error(e.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getFullPlaylistData(
         playlistId: String,
@@ -433,7 +432,7 @@ internal class PlaylistRepositoryImpl(
                         emit(Resource.Error<PlaylistBrowse>(e.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getPlaylistData(
         playlistId: String,
@@ -505,287 +504,106 @@ internal class PlaylistRepositoryImpl(
                                     ?.header
                                     ?.musicResponsiveHeaderRenderer
                         Logger.d("getPlaylistData", "header: $header")
-                        val continueParam =
+                        var continueParam =
                             result.getPlaylistContinuation()
-                        val radioEndpoint =
-                            result.getPlaylistRadioEndpoint()
-                        val shuffleEndpoint =
-                            result.getPlaylistShuffleEndpoint()
-                        Logger.d("getPlaylistData", "Endpoint: $radioEndpoint $shuffleEndpoint")
-                        try {
-                            parsePlaylistData(header, data ?: emptyList(), playlistId, viewString)?.let { playlist ->
-                                emit(
-                                    Resource.Success<Pair<PlaylistBrowse, String?>>(
-                                        Pair(
-                                            playlist.copy(
-                                                tracks =
-                                                    playlist.tracks.toMutableList().apply {
-                                                        addAll(listContent)
-                                                    },
-                                                trackCount = (playlist.trackCount + listContent.size),
-                                                shuffleEndpoint = shuffleEndpoint?.toYouTubeWatchEndpoint(),
-                                                radioEndpoint = radioEndpoint?.toYouTubeWatchEndpoint(),
-                                            ),
-                                            continueParam,
-                                        ),
-                                    ),
-                                )
-                            } ?: emit(
-                                Resource.Error<
-                                    Pair<PlaylistBrowse, String?>,
-                                >("Error"),
-                            )
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            emit(
-                                Resource.Error<
-                                    Pair<PlaylistBrowse, String?>,
-                                >(e.message.toString()),
-                            )
+                        var count = 0
+                        Logger.d("getPlaylistData", "playlist data: ${listContent.size}")
+                        Logger.d("getPlaylistData", "continueParam: $continueParam")
+//                        else {
+//                            var listTrack = playlistBrowse.tracks.toMutableList()
+                        while (continueParam != null && count < 10) {
+                            youTube
+                                .customQuery(
+                                    browseId = null,
+                                    continuation = continueParam,
+                                    setLogin = true,
+                                ).onSuccess { values ->
+                                    Logger.d("getPlaylistData", "continue: $continueParam")
+                                    Logger.d(
+                                        "getPlaylistData",
+                                        "values: ${values.onResponseReceivedActions}",
+                                    )
+                                    val dataMore: List<SongItem> =
+                                        values.onResponseReceivedActions
+                                            ?.firstOrNull()
+                                            ?.appendContinuationItemsAction
+                                            ?.continuationItems
+                                            ?.apply {
+                                                Logger.w("getPlaylistData", "dataMore: ${this.size}")
+                                            }?.mapNotNull {
+                                                NextPage.fromMusicResponsiveListItemRenderer(
+                                                    it.musicResponsiveListItemRenderer ?: return@mapNotNull null,
+                                                )
+                                            } ?: emptyList()
+                                    listContent.addAll(dataMore.map { it.toTrack() })
+                                    continueParam =
+                                        values.getPlaylistContinuation()
+                                    count++
+                                }.onFailure {
+                                    Logger.e("getPlaylistData", "Error: ${it.message}")
+                                    continueParam = null
+                                }
                         }
-                    }.onFailure { e ->
-                        Logger.e("getPlaylistData", e.message ?: "Error")
-                        emit(
-                            Resource.Error<
-                                Pair<PlaylistBrowse, String?>,
-                            >(e.message.toString()),
-                        )
-                    }
-            }
-        }.flowOn(Dispatchers.IO)
-
-    override fun getLibraryPlaylist(): Flow<List<PlaylistsResult>?> =
-        flow {
-            youTube
-                .getLibraryPlaylists()
-                .onSuccess { data ->
-                    val input =
-                        data.contents
-                            ?.singleColumnBrowseResultsRenderer
-                            ?.tabs
-                            ?.get(
-                                0,
-                            )?.tabRenderer
-                            ?.content
-                            ?.sectionListRenderer
-                            ?.contents
-                            ?.get(
-                                0,
-                            )?.gridRenderer
-                            ?.items
-                    val listItem = mutableListOf<PlaylistsResult>()
-                    if (input.isNullOrEmpty()) {
-                        Logger.w("Library", "No playlists found")
-                        emit(null)
-                        return@onSuccess
-                    }
-                    listItem.addAll(
-                        parseLibraryPlaylist(input),
-                    )
-                    var continuation =
-                        data.contents
-                            ?.singleColumnBrowseResultsRenderer
-                            ?.tabs
-                            ?.firstOrNull()
-                            ?.tabRenderer
-                            ?.content
-                            ?.sectionListRenderer
-                            ?.contents
-                            ?.firstOrNull()
-                            ?.gridRenderer
-                            ?.continuations
-                            ?.firstOrNull()
-                            ?.nextContinuationData
-                            ?.continuation
-                    while (continuation != null) {
-                        youTube
-                            .nextYouTubePlaylists(continuation)
-                            .onSuccess { nextData ->
-                                continuation = nextData.second
-                                Logger.w("Library", "continuation: $continuation")
-                                val nextInput = nextData.first
-                                listItem.addAll(
-                                    parseNextLibraryPlaylist(nextInput),
-                                )
-                            }.onFailure { exception ->
-                                exception.printStackTrace()
-                                Logger.e("Library", "Error: ${exception.message}")
-                                continuation = null
-                            }
-                    }
-                    if (listItem.isNotEmpty()) {
-                        emit(listItem)
-                        val account = localDataSource.getUsedGoogleAccount()
-                        val isNeeded =
-                            dataStoreManager.keepYouTubePlaylistOffline.first() == DataStoreManager.TRUE &&
-                                dataStoreManager.loggedIn.first() == DataStoreManager.TRUE && account != null
-                        if (isNeeded) {
-                            insertYourYouTubePlaylist(
-                                YourYouTubePlaylistList(
-                                    emailPageId = "${account.email}_${account.pageId ?: ""}",
-                                    listBrowseIds = listItem.map { it.browseId },
+                        Logger.d("getPlaylistData", "playlist final data: ${listContent.size}")
+                        parsePlaylistData(header, data ?: emptyList(), playlistId, viewString)?.let { playlist ->
+                            emit(
+                                Resource.Success<Pair<PlaylistBrowse, String?>>(
+                                    Pair(
+                                        playlist.copy(
+                                            tracks =
+                                                playlist.tracks.toMutableList().apply {
+                                                    addAll(listContent)
+                                                },
+                                            trackCount = (playlist.trackCount + listContent.size),
+                                        ),
+                                        continueParam,
+                                    ),
                                 ),
                             )
-                        }
-                    } else {
-                        emit(null)
+                        } ?: emit(Resource.Error<Pair<PlaylistBrowse, String?>>("Error"))
+                    }.onFailure { e ->
+                        Logger.e("getPlaylistData", e.message ?: "Error")
+                        emit(Resource.Error<Pair<PlaylistBrowse, String?>>(e.message.toString()))
                     }
-                }.onFailure { e ->
-                    Logger.e("Library", "Error: ${e.message}")
-                    e.printStackTrace()
-                    val account = localDataSource.getUsedGoogleAccount()
-                    val isNeeded =
-                        dataStoreManager.keepYouTubePlaylistOffline.first() == DataStoreManager.TRUE &&
-                            dataStoreManager.loggedIn.first() == DataStoreManager.TRUE && account != null
-                    if (isNeeded) {
-                        val list =
-                            getYourYouTubePlaylistList("${account.email}_${account.pageId ?: ""}")
-                                .lastOrNull()
-                        if (list != null) {
-                            emit(
-                                list.listBrowseIds.mapNotNull { id ->
-                                    getPlaylist(id).lastOrNull()?.let {
-                                        PlaylistsResult(
-                                            author = it.author ?: "",
-                                            browseId = it.id,
-                                            category = "",
-                                            itemCount = "${ it.trackCount }",
-                                            resultType = "",
-                                            thumbnails =
-                                                listOf(
-                                                    Thumbnail(
-                                                        width = 544,
-                                                        url = it.thumbnails,
-                                                        height = 544,
-                                                    ),
-                                                ),
-                                            title = it.title,
-                                        )
-                                    }
-                                },
-                            )
-                        } else {
-                            emit(null)
-                        }
-                    } else {
-                        emit(null)
-                    }
-                }
-        }.flowOn(Dispatchers.IO)
+            }
+        }.flowOn(Dispatchers.Default)
 
-    override fun getMixedForYou(): Flow<List<PlaylistsResult>?> =
+    override suspend fun getPlaylistLibraryData(): Flow<YourYouTubePlaylistList?> =
         flow {
             youTube
-                .getMixedForYou()
-                .onSuccess { data ->
-                    val input =
-                        data.contents
-                            ?.singleColumnBrowseResultsRenderer
-                            ?.tabs
-                            ?.get(
-                                0,
-                            )?.tabRenderer
-                            ?.content
-                            ?.sectionListRenderer
-                            ?.contents
-                            ?.get(
-                                0,
-                            )?.gridRenderer
-                            ?.items
-                    val listItem = mutableListOf<PlaylistsResult>()
-                    if (input.isNullOrEmpty()) {
-                        Logger.w("Mixed For You", "No playlists found")
-                        emit(null)
-                        return@onSuccess
-                    }
-                    listItem.addAll(
-                        parseLibraryPlaylist(input),
-                    )
-                    var continuation =
-                        data.contents
-                            ?.singleColumnBrowseResultsRenderer
-                            ?.tabs
-                            ?.firstOrNull()
-                            ?.tabRenderer
-                            ?.content
-                            ?.sectionListRenderer
-                            ?.contents
-                            ?.firstOrNull()
-                            ?.gridRenderer
-                            ?.continuations
-                            ?.firstOrNull()
-                            ?.nextContinuationData
-                            ?.continuation
-                    while (continuation != null) {
-                        youTube
-                            .nextYouTubePlaylists(continuation)
-                            .onSuccess { nextData ->
-                                continuation = nextData.second
-                                Logger.w("Mixed For You", "continuation: $continuation")
-                                val nextInput = nextData.first
-                                listItem.addAll(
-                                    parseNextLibraryPlaylist(nextInput),
-                                )
-                            }.onFailure { exception ->
-                                exception.printStackTrace()
-                                Logger.e("Mixed For You", "Error: ${exception.message}")
-                                continuation = null
-                            }
-                    }
-                    if (listItem.isNotEmpty()) {
-                        emit(listItem)
-                    } else {
-                        emit(null)
-                    }
-                }
-        }.flowOn(Dispatchers.IO)
-
-    override fun updateYourYouTubePlaylistTitle(
-        playlistId: String,
-        newTitle: String,
-    ): Flow<Resource<String>> =
-        flow {
-            youTube
-                .editPlaylist(playlistId, newTitle)
-                .onSuccess {
-                    emit(Resource.Success(it.toString()))
-                }.onFailure {
-                    emit(Resource.Error<String>(it.message ?: "Unknown error"))
-                }
-        }.flowOn(Dispatchers.IO)
-
-    override suspend fun insertYourYouTubePlaylist(yourYouTubePlaylist: YourYouTubePlaylistList) =
-        withContext(Dispatchers.IO) {
-            localDataSource.insertYourYouTubePlaylist(yourYouTubePlaylist)
-        }
-
-    override suspend fun deleteAllYourYouTubePlaylist() =
-        withContext(Dispatchers.IO) {
-            localDataSource.deleteAllYourYouTubePlaylist()
-        }
-
-    override fun getYourYouTubePlaylistList(emailPageId: String): Flow<YourYouTubePlaylistList?> =
-        flow {
-            emit(localDataSource.getYourYouTubePlaylistList(emailPageId))
-        }.flowOn(Dispatchers.IO)
-
-    override fun getChartPlaylist(): Flow<Resource<List<ChartItem>>> =
-        flow {
-            youTube
-                .getSimpMusicChart()
+                .getPlaylistLibrary()
                 .onSuccess { response ->
-                    val data = response.data?.filterNotNull() ?: emptyList()
-                    val result =
-                        data.mapNotNull {
-                            ChartItem(
-                                name = it.name ?: return@mapNotNull null,
-                                ytPlaylistId = it.youtubePlaylistId ?: return@mapNotNull null,
-                            )
-                        }
-                    emit(Resource.Success(result))
-                }.onFailure { exception ->
-                    exception.printStackTrace()
-                    emit(Resource.Error<List<ChartItem>>(exception.message ?: "Unknown error"))
+                    parseLibraryPlaylist(response)?.let { list ->
+                        emit(list)
+                    } ?: emit(null)
+                }.onFailure {
+                    emit(null)
                 }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
+
+    override suspend fun getPlaylistLibraryDataContinue(continueParam: String): Flow<YourYouTubePlaylistList?> =
+        flow {
+            youTube
+                .customQuery(
+                    browseId = null,
+                    continuation = continueParam,
+                    setLogin = true,
+                ).onSuccess { response ->
+                    parseNextLibraryPlaylist(response)?.let { list ->
+                        emit(list)
+                    } ?: emit(null)
+                }.onFailure {
+                    emit(null)
+                }
+        }.flowOn(Dispatchers.Default)
+
+    override suspend fun getLibraryPlaylist(): Flow<List<PlaylistEntity>?> =
+        flow {
+            emit(localDataSource.getLibraryPlaylist())
+        }.flowOn(Dispatchers.Default)
+
+    override suspend fun getMixedForYou(): Flow<List<PlaylistEntity>?> =
+        flow {
+            emit(localDataSource.getMixedForYou())
+        }.flowOn(Dispatchers.Default)
 }

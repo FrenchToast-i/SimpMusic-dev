@@ -23,15 +23,15 @@ internal class ArtistRepositoryImpl(
     override fun getAllArtists(limit: Int): Flow<List<ArtistEntity>> =
         flow {
             emit(localDataSource.getAllArtists(limit))
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getArtistById(id: String): Flow<ArtistEntity?> =
         flow {
             emit(localDataSource.getArtist(id))
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override suspend fun insertArtist(artistEntity: ArtistEntity) =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             localDataSource.insertArtist(artistEntity)
         }
 
@@ -39,7 +39,7 @@ internal class ArtistRepositoryImpl(
         channelId: String,
         thumbnail: String,
     ) = withContext(
-        Dispatchers.Main,
+        Dispatchers.Default,
     ) {
         localDataSource.updateArtistImage(
             channelId,
@@ -51,7 +51,7 @@ internal class ArtistRepositoryImpl(
         channelId: String,
         followedStatus: Int,
     ) = withContext(
-        Dispatchers.Main,
+        Dispatchers.Default,
     ) { localDataSource.updateFollowed(followedStatus, channelId) }
 
     override fun getFollowedArtists(): Flow<List<ArtistEntity>> =
@@ -61,12 +61,12 @@ internal class ArtistRepositoryImpl(
                     localDataSource.getFollowedArtists(limit, offset)
                 },
             )
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override suspend fun updateArtistInLibrary(
         inLibrary: LocalDateTime,
         channelId: String,
-    ) = withContext(Dispatchers.Main) {
+    ) = withContext(Dispatchers.Default) {
         localDataSource.updateArtistInLibrary(
             inLibrary,
             channelId,
@@ -85,5 +85,5 @@ internal class ArtistRepositoryImpl(
                         emit(Resource.Error<ArtistBrowse>(e.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 }

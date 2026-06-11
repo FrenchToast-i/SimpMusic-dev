@@ -13,11 +13,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 class MoodViewModel(
-    dataStoreManager: DataStoreManager,
+    private val dataStoreManager: DataStoreManager,
     private val homeRepository: HomeRepository,
 ) : BaseViewModel() {
     private val _moodsMomentObject: MutableStateFlow<MoodsMomentObject?> = MutableStateFlow(null)
@@ -28,8 +27,16 @@ class MoodViewModel(
     private var language: String? = null
 
     init {
-        regionCode = runBlocking { dataStoreManager.location.first() }
-        language = runBlocking { dataStoreManager.getString(SELECTED_LANGUAGE).first() }
+        // Initialize async without blocking main thread
+        viewModelScope.launch {
+            try {
+                regionCode = dataStoreManager.location.first()
+                language = dataStoreManager.getString(SELECTED_LANGUAGE).first()
+                Logger.d("MoodViewModel", "Init complete: regionCode=$regionCode, language=$language")
+            } catch (e: Exception) {
+                Logger.e("MoodViewModel", "Init failed: ${e.message}")
+            }
+        }
     }
 
     fun getMood(params: String) {
@@ -50,7 +57,8 @@ class MoodViewModel(
                     }
                 }
             }
-            withContext(Dispatchers.Main) {
+            // Update loading state on Default dispatcher
+            withContext(Dispatchers.Default) {
                 loading.value = false
             }
         }

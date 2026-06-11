@@ -29,12 +29,12 @@ internal class AlbumRepositoryImpl(
     override fun getAllAlbums(limit: Int): Flow<List<AlbumEntity>> =
         flow {
             emit(localDataSource.getAllAlbums(limit))
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getAlbum(id: String): Flow<AlbumEntity?> =
         flow {
             emit(localDataSource.getAlbum(id))
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getAlbumAsFlow(id: String) = localDataSource.getAlbumAsFlow(id)
 
@@ -48,29 +48,29 @@ internal class AlbumRepositoryImpl(
                     )
                 },
             )
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun insertAlbum(albumEntity: AlbumEntity) =
         flow {
             emit(localDataSource.insertAlbum(albumEntity))
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override suspend fun updateAlbumLiked(
         albumId: String,
         likeStatus: Int,
-    ) = withContext(Dispatchers.Main) { localDataSource.updateAlbumLiked(likeStatus, albumId) }
+    ) = withContext(Dispatchers.Default) { localDataSource.updateAlbumLiked(likeStatus, albumId) }
 
     override suspend fun updateAlbumInLibrary(
         inLibrary: LocalDateTime,
         albumId: String,
     ) = withContext(
-        Dispatchers.Main,
+        Dispatchers.Default,
     ) { localDataSource.updateAlbumInLibrary(inLibrary, albumId) }
 
     override suspend fun updateAlbumDownloadState(
         albumId: String,
         downloadState: Int,
-    ) = withContext(Dispatchers.Main) {
+    ) = withContext(Dispatchers.Default) {
         localDataSource.updateAlbumDownloadState(
             downloadState,
             albumId,
@@ -78,12 +78,12 @@ internal class AlbumRepositoryImpl(
     }
 
     override suspend fun insertFollowedArtistSingleAndAlbum(followedArtistSingleAndAlbum: FollowedArtistSingleAndAlbum) =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             localDataSource.insertFollowedArtistSingleAndAlbum(followedArtistSingleAndAlbum)
         }
 
     override suspend fun deleteFollowedArtistSingleAndAlbum(channelId: String) =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             localDataSource.deleteFollowedArtistSingleAndAlbum(channelId)
         }
 
@@ -94,12 +94,12 @@ internal class AlbumRepositoryImpl(
                     localDataSource.getAllFollowedArtistSingleAndAlbums(limit, offset)
                 }
             emit(list)
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override suspend fun getFollowedArtistSingleAndAlbum(channelId: String): Flow<FollowedArtistSingleAndAlbum?> =
         flow {
             emit(localDataSource.getFollowedArtistSingleAndAlbum(channelId))
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getAlbumData(browseId: String): Flow<Resource<AlbumBrowse>> =
         flow {
@@ -113,7 +113,7 @@ internal class AlbumRepositoryImpl(
                         emit(Resource.Error(e.message.toString()))
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 
     override fun getAlbumMore(
         browseId: String,
@@ -141,5 +141,5 @@ internal class AlbumRepositoryImpl(
                         emit(null)
                     }
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.Default)
 }
