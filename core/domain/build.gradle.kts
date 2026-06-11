@@ -42,6 +42,7 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(projects.common)
                 api(libs.androidx.paging.common)
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
 
