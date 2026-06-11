@@ -12,7 +12,7 @@ import platform.CoreCrypto.CCHmac
 import platform.CoreCrypto.kCCHmacAlgSHA1
 import platform.CoreCrypto.kCCHmacAlgSHA256
 import kotlin.io.encoding.Base64
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 /**
  * iOS implementation of HMAC using CoreCrypto framework.
@@ -68,8 +68,8 @@ actual class Hmac actual constructor(
                 }
             }
 
-            // Convert native UByte array to Kotlin ByteArray
-            val bytes = ByteArray(digestLength) { i -> output[i].toByte() }
+            // Convert native UByteVar array to Kotlin ByteArray by reading .value
+            val bytes = ByteArray(digestLength) { i -> output[i].value.toByte() }
             Base64.encode(bytes)
         }
     }
