@@ -67,18 +67,18 @@ actual class Hmac actual constructor(
             keyBytes.usePinned { keyPinned ->
                 dataBytes.usePinned { dataPinned ->
                     CCHmac(
-                        algorithm = algorithmType,
+                        alg = algorithmType,
                         key = keyPinned.addressOf(0),
-                        keyLen = keyBytes.size.convert(),
+                        keyLength = keyBytes.size.convert<UInt>(),
                         data = dataPinned.addressOf(0),
-                        dataLen = dataBytes.size.convert(),
+                        dataLength = dataBytes.size.convert<UInt>(),
                         macOut = output,
                     )
                 }
             }
 
             // Convert C UByteArray to Kotlin ByteArray using functional constructor
-            val bytes = ByteArray(digestLength) { i -> output[i].toByte() }
+            val bytes = ByteArray(digestLength) { i -> output[i].convert<Byte>() }
             Base64.encode(bytes)
         }
     }
