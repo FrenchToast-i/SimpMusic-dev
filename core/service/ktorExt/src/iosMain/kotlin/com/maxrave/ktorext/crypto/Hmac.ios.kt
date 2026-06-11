@@ -13,7 +13,7 @@ import platform.CoreCrypto.CCHmac
 import platform.CoreCrypto.kCCHmacAlgSHA1
 import platform.CoreCrypto.kCCHmacAlgSHA256
 import kotlin.io.encoding.Base64
-import kotlinx.datetime.Clock
+import platform.Foundation.NSDate
 
 /**
  * iOS implementation of HMAC using CoreCrypto framework.
@@ -42,7 +42,7 @@ actual class Hmac actual constructor(
         }
 
     actual fun getMacTimestampPair(uri: String): Pair<String, String> {
-        val timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds().toString()
+        val timestamp = (NSDate().timeIntervalSince1970 * 1000).toLong().toString()
         val data = "$timestamp$uri"
         val hmacToken = generateHmac(data)
         return hmacToken to timestamp
@@ -82,7 +82,7 @@ actual class Hmac actual constructor(
 
     actual fun isValidTimestamp(timestamp: String): Boolean {
         val requestTime = timestamp.toLongOrNull() ?: return false
-        val currentTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        val currentTime = (NSDate().timeIntervalSince1970 * 1000).toLong()
         return (currentTime - requestTime) < tokenTtl
     }
 }
