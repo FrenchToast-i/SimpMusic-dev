@@ -1,8 +1,5 @@
 package com.maxrave.kotlinytmusicscraper.extension
 
-import kotlin.reflect.full.memberProperties
-
-inline fun <reified T : Any> T.asMap(): Map<String, Any?> {
-    val props = T::class.memberProperties.associateBy { it.name }
-    return props.keys.associateWith { props[it]?.get(this) }
-}
+// Reflection is not available on iOS runtime, so this extension
+// is removed from commonMain. Platform-specific implementations
+// should be created in jvmMain and androidMain source sets if needed.
