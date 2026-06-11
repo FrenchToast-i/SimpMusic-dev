@@ -99,7 +99,7 @@ actual fun PlatformWebView(
 actual fun DiscordWebView(
     state: MutableState<WebViewState>,
     aboveContent: @Composable (BoxScope.() -> Unit),
-    onLoginDone: (String) -> Unit,
+    onLoginDone: (token: String) -> Unit,
 ) {
     val initUrl = "https://discord.com/login"
     Box(Modifier.fillMaxSize()) {
