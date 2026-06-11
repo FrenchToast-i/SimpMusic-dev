@@ -54,11 +54,16 @@ actual class Hmac actual constructor(algorithm: String, private val secretKey: S
                     )
                 }
             }
+<<<<<<< HEAD
             val bytes = ByteArray(digestLength)
             for (i in 0 until digestLength) {
                 bytes[i] = output[i].toByte()
+=======
+            val bytes = ByteArray(digestLength) { i ->
+                output[i].toByte()
+>>>>>>> 3ec3838d7f2bec601ad9f4684c58ebf4834c1bb8
             }
-            Base64.encode(bytes)
+        Base64.encode(bytes)
         }
     }
 
